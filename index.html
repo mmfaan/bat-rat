@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAT RAT — شبكة الليل الاجتماعية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@600;700;800&family=Tajawal:wght@400;500;700;900&family=Anton&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- خلفية متحركة خفيفة لرادار الخفاش -->
+<div class="sonar-bg" aria-hidden="true">
+  <span class="sonar-ring r1"></span>
+  <span class="sonar-ring r2"></span>
+  <span class="sonar-ring r3"></span>
+</div>
+
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<!-- ============== شاشة الدخول / إنشاء حساب ============== -->
+<section id="view-auth" class="view-auth">
+  <div class="auth-card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 14 L18 30 L4 24 L14 40 L26 38 L32 50 L38 38 L50 40 L60 24 L46 30 Z" fill="currentColor"/>
+        <circle cx="26" cy="29" r="2.4" fill="var(--bg)"/>
+        <circle cx="38" cy="29" r="2.4" fill="var(--bg)"/>
+      </svg>
+      <h1 class="brand-word">BAT RAT</h1>
+    </div>
+    <p class="brand-tagline">شبكة من يسهرون. مكان لنشر أفكارك، صورك، ومجتمعك الخاص.</p>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" data-tab="login" id="btn-show-login">تسجيل الدخول</button>
+      <button type="button" class="auth-tab" data-tab="signup" id="btn-show-signup">إنشاء حساب</button>
+    </div>
+
+    <p id="auth-message" class="auth-message hidden" role="alert"></p>
+
+    <form id="form-login" class="auth-form active">
+      <label class="field">
+        <span>البريد الإلكتروني</span>
+        <input type="email" id="login-email" required autocomplete="email" placeholder="example@mail.com">
+      </label>
+      <label class="field">
+        <span>كلمة المرور</span>
+        <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" minlength="6">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit">دخول</button>
+    </form>
+
+    <form id="form-signup" class="auth-form">
+      <label class="field">
+        <span>اسم المستخدم (بدون مسافات، إنجليزي)</span>
+        <input type="text" id="signup-username" required pattern="[a-zA-Z0-9_]{3,20}" placeholder="night_runner" title="٣ إلى ٢٠ حرفًا إنجليزيًا أو رقمًا أو شرطة سفلية">
+      </label>
+      <label class="field">
+        <span>الاسم الظاهر</span>
+        <input type="text" id="signup-displayname" required maxlength="40" placeholder="اسمك كما يظهر للآخرين">
+      </label>
+      <label class="field">
+        <span>البريد الإلكتروني</span>
+        <input type="email" id="signup-email" required autocomplete="email" placeholder="example@mail.com">
+      </label>
+      <label class="field">
+        <span>كلمة المرور</span>
+        <input type="password" id="signup-password" required autocomplete="new-password" placeholder="٦ أحرف على الأقل" minlength="6">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" id="btn-signup-submit">إنشاء الحساب</button>
+    </form>
+
+    <p class="setup-hint">لم يعمل شيء؟ تأكد أنك وضعت رابط ومفتاح Supabase داخل ملف <code>js/config.js</code> — التفاصيل في <code>README.md</code>.</p>
+  </div>
+</section>
+
+<!-- ============== هيكل التطبيق بعد تسجيل الدخول ============== -->
+<div id="view-app" class="app-shell hidden">
+
+  <header class="navbar">
+    <div class="navbar-brand">
+      <svg class="brand-mark small" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 14 L18 30 L4 24 L14 40 L26 38 L32 50 L38 38 L50 40 L60 24 L46 30 Z" fill="currentColor"/>
+      </svg>
+      <span class="brand-word small">BAT RAT</span>
+    </div>
+
+    <form id="form-search-user" class="nav-search" autocomplete="off">
+      <input type="text" id="search-username" placeholder="ابحث باسم مستخدم…" aria-label="بحث عن مستخدم">
+      <button type="submit" aria-label="بحث">🔍</button>
+    </form>
+
+    <nav class="nav-tabs">
+      <button type="button" class="nav-tab active" data-view="feed">الرئيسية</button>
+      <button type="button" class="nav-tab" data-view="communities">المجتمعات</button>
+      <button type="button" class="nav-tab" data-view="messages">الرسائل<span class="badge hidden" id="badge-unread"></span></button>
+      <button type="button" class="nav-tab" data-view="profile">حسابي</button>
+    </nav>
+
+    <button type="button" class="btn btn-ghost" id="btn-logout">خروج</button>
+  </header>
+
+  <main class="main-content" id="main-content">
+
+    <!-- ---------------- الرئيسية / المنشورات ---------------- -->
+    <section class="view-section active" id="section-feed" data-section="feed">
+      <div class="composer card">
+        <form id="form-create-post">
+          <textarea id="post-content" placeholder="بماذا تفكر الليلة؟" maxlength="500" required></textarea>
+          <div class="composer-row">
+            <label class="file-label">
+              📷 صورة
+              <input type="file" id="post-image" accept="image/*" hidden>
+            </label>
+            <span class="file-name" id="post-image-name"></span>
+            <button type="submit" class="btn btn-primary">نشر</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="feed-loading" class="empty-state hidden">جاري تحميل المنشورات…</div>
+      <div id="feed-empty" class="empty-state hidden">
+        <p>لا توجد منشورات بعد.</p>
+        <p class="muted">كن أول من ينشر شيئًا الليلة.</p>
+      </div>
+      <div id="feed-list" class="post-list"></div>
+    </section>
+
+    <!-- ---------------- المجتمعات (قائمة) ---------------- -->
+    <section class="view-section" id="section-communities" data-section="communities">
+      <div class="section-header">
+        <h2>المجتمعات</h2>
+        <button type="button" class="btn btn-primary" id="btn-open-create-community">+ مجتمع جديد</button>
+      </div>
+      <div id="communities-loading" class="empty-state hidden">جاري التحميل…</div>
+      <div id="communities-empty" class="empty-state hidden">
+        <p>لا توجد مجتمعات بعد.</p>
+        <p class="muted">أنشئ أول مجتمع وابدأ بدعوة الآخرين.</p>
+      </div>
+      <div id="communities-list" class="community-grid"></div>
+    </section>
+
+    <!-- ---------------- تفاصيل مجتمع ---------------- -->
+    <section class="view-section" id="section-community-detail" data-section="community-detail">
+      <button type="button" class="btn btn-ghost" id="btn-back-communities">‹ كل المجتمعات</button>
+      <div class="community-header card" id="community-header"></div>
+
+      <div class="composer card" id="community-composer">
+        <form id="form-create-community-post">
+          <textarea id="community-post-content" placeholder="شارك شيئًا مع المجتمع…" maxlength="500" required></textarea>
+          <div class="composer-row">
+            <label class="file-label">
+              📷 صورة
+              <input type="file" id="community-post-image" accept="image/*" hidden>
+            </label>
+            <span class="file-name" id="community-post-image-name"></span>
+            <button type="submit" class="btn btn-primary">نشر في المجتمع</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="community-posts-empty" class="empty-state hidden">
+        <p>لا منشورات في هذا المجتمع بعد.</p>
+      </div>
+      <div id="community-posts-list" class="post-list"></div>
+    </section>
+
+    <!-- ---------------- الرسائل ---------------- -->
+    <section class="view-section" id="section-messages" data-section="messages">
+      <div class="messages-layout">
+        <aside class="conversations-panel card">
+          <div class="section-header tight">
+            <h3>المحادثات</h3>
+          </div>
+          <div id="conversations-empty" class="empty-state small hidden">
+            <p>لا محادثات بعد.</p>
+            <p class="muted">ابحث باسم مستخدم في الأعلى وابدأ محادثة.</p>
+          </div>
+          <ul id="conversations-list" class="conversations-list"></ul>
+        </aside>
+
+        <section class="chat-panel card">
+          <div id="chat-empty" class="empty-state">
+            <p>اختر محادثة من القائمة.</p>
+          </div>
+          <div id="chat-active" class="chat-active hidden">
+            <div class="chat-header" id="chat-header"></div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <form id="form-send-message" class="chat-input-row">
+              <input type="text" id="message-input" placeholder="اكتب رسالة…" maxlength="1000" autocomplete="off" required>
+              <button type="submit" class="btn btn-primary">إرسال</button>
+            </form>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ---------------- حسابي ---------------- -->
+    <section class="view-section" id="section-profile" data-section="profile">
+      <div class="profile-header card">
+        <label class="avatar-upload">
+          <img id="my-avatar" class="avatar avatar-lg" src="" alt="صورتك الشخصية">
+          <span class="avatar-edit-hint">تغيير الصورة</span>
+          <input type="file" id="avatar-input" accept="image/*" hidden>
+        </label>
+        <div class="profile-info">
+          <h2 id="my-displayname"></h2>
+          <p class="muted" id="my-username"></p>
+          <form id="form-edit-profile" class="edit-profile-form">
+            <input type="text" id="edit-displayname" maxlength="40" placeholder="الاسم الظاهر" required>
+            <textarea id="edit-bio" maxlength="160" placeholder="نبذة قصيرة عنك…"></textarea>
+            <button type="submit" class="btn btn-secondary">حفظ التعديلات</button>
+          </form>
+        </div>
+      </div>
+      <h3 class="subheading">منشوراتي</h3>
+      <div id="my-posts-empty" class="empty-state hidden"><p>لم تنشر شيئًا بعد.</p></div>
+      <div id="my-posts-list" class="post-list"></div>
+    </section>
+
+    <!-- ---------------- ملف شخصي عام (لمستخدم آخر) ---------------- -->
+    <section class="view-section" id="section-public-profile" data-section="public-profile">
+      <button type="button" class="btn btn-ghost" id="btn-back-from-public">‹ رجوع</button>
+      <div class="profile-header card">
+        <img id="public-avatar" class="avatar avatar-lg" src="" alt="">
+        <div class="profile-info">
+          <h2 id="public-displayname"></h2>
+          <p class="muted" id="public-username"></p>
+          <p id="public-bio"></p>
+          <button type="button" class="btn btn-primary" id="btn-message-user">✉️ إرسال رسالة</button>
+        </div>
+      </div>
+      <h3 class="subheading">منشورات</h3>
+      <div id="public-posts-empty" class="empty-state hidden"><p>لا منشورات بعد.</p></div>
+      <div id="public-posts-list" class="post-list"></div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span>BAT RAT — شبكة من يسهرون</span>
+    <span class="dot">•</span>
+    <span>تصميم وتطوير: محمد محسن فالح</span>
+  </footer>
+</div>
+
+<!-- ============== مودال: إنشاء مجتمع ============== -->
+<div class="modal-overlay hidden" id="modal-create-community">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>مجتمع جديد</h3>
+      <button type="button" class="btn-close" data-close-modal="modal-create-community">✕</button>
+    </div>
+    <form id="form-create-community">
+      <label class="field">
+        <span>اسم المجتمع</span>
+        <input type="text" id="community-name" required maxlength="50" placeholder="مثال: عشاق التصوير الليلي">
+      </label>
+      <label class="field">
+        <span>الوصف</span>
+        <textarea id="community-description" maxlength="200" placeholder="عن ماذا يتحدث هذا المجتمع؟"></textarea>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">إنشاء المجتمع</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
